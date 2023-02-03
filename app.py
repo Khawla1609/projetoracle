@@ -116,7 +116,13 @@ class produit():
         p1="delete from KHAOULA.Produit where id=:id" 
         cursor.execute(p1,{'id': id})  
         connexion.commit()
-        return "Data delete successfully"      
+        return "Data delete successfully"  
+    def update(self,connexion,id,nom,prix):
+        cursor=connexion.cursor()  
+        p1="update KHAOULA.Produit set nom=:1,prix=:2 where id=:3"
+        cursor.execute(p1,(nom,prix,id))
+        connexion.commit()
+        return "Data updated successfully"          
 class commande():
 
     def getconnection(self,score,score1):
@@ -145,6 +151,12 @@ class commande():
         connexion.commit()
         return "Data delete successfully"  
 
+    def update(self,connexion,id,nomproduit,nomclient,adresseclient,quantite):
+        cursor=connexion.cursor()  
+        p1="update KHAOULA.Commande set nomproduit=:1,nomclient=:2,adresseclient=:3,quantite=:4 where id=:5"
+        cursor.execute(p1,(nomproduit,nomclient,adresseclient,quantite,id))
+        connexion.commit()
+        return "Data updated successfully"   
 session_pool = None  
 
 @app.route('/login',methods=['POST','GET'])     
@@ -188,10 +200,11 @@ def delete(id):
     try:
        d=c.delete(session_pool,id)
        print(d)
-       return redirect(url_for('table'))
+       return redirect(url_for('Commande'))
     except cx_Oracle.DatabaseError as e:
         error=str(e)
         return render_template('test.html', error_msg=error)
+
 @app.route('/delete1/<id>/', methods=['GET', 'POST'])
 @login_required
 def delete1(id):
@@ -201,17 +214,46 @@ def delete1(id):
     c=produit()
     d=c.delete(session_pool,id)
     print(d)
-    return redirect(url_for('tableinfoprof'))     
+    return redirect(url_for('produitt.html'))     
 
 @app.route('/welcome', methods=['GET', 'POST'])
 @login_required
 def welcome():
     return render_template('welcome.html')  
 
-@app.route('/tableinfoprof',methods=['POST','GET'])    
+@app.route('/update',methods=['POST','GET'])    
 @login_required
-def tableinfoprof():
-    infoprof=[]
+def update():
+    global session_pool
+    c=commande()
+    if request.method=='POST':
+        id=request.form['id']
+        NOMPRODUIT=request.form["NOMPRODUIT"]
+        NomCLIENT= request.form["NomCLIENT"]
+        ADRESSECLIENT=request.form["ADRESSECLIENT"]
+        QUANTITE= request.form["QUANTITE"]
+        d=c.update(session_pool,id,NOMPRODUIT,NomCLIENT,ADRESSECLIENT,QUANTITE)
+        flash("Data updated successfully ")
+        return redirect(url_for('Commande'))
+
+@app.route('/update1',methods=['POST','GET'])    
+@login_required
+def update1():
+    global session_pool
+    c=produit()
+    if request.method=='POST':
+        id=request.form['id']
+        nom=request.form["nom"]
+        prix= request.form["prix"]
+        d=c.update(session_pool,id,nom,prix)
+        print(nom,prix)
+        flash("Data inserted successfully ")
+        return redirect(url_for('produitt'))
+
+@app.route('/produitt',methods=['POST','GET'])    
+@login_required
+def produitt():
+    produitt=[]
     message=None
     global session_pool
     print(session_pool)
@@ -226,12 +268,12 @@ def tableinfoprof():
        for key,value in d.items():
           for i in value:
             my_list = ast.literal_eval(i)
-            infoprof.append(my_list)
+            produitt.append(my_list)
     #print(c.selectdata(c))
-       return render_template('infoprof.html',data=infoprof,message=message) 
+       return render_template('produit.html',data=produitt,message=message) 
     else:
         message="vous n'avez pas le droit de voir cette table"
-        return render_template('infoprof.html',data=infoprof,message=message)  
+        return render_template('produit.html',data=produitt,message=message)  
 
 @app.route('/insert',methods=['POST','GET'])    
 @login_required
@@ -250,7 +292,7 @@ def insert():
         d=c.insertdata(session_pool,id,NOMPRODUIT,NomCLIENT,ADRESSECLIENT,QUANTITE)
         print(d)
         flash("Data inserted successfully ")
-        return redirect(url_for('table'))
+        return redirect(url_for('Commande'))
     except cx_Oracle.DatabaseError as e:
         error=str(e)
         return render_template('test.html', error_msg=error)
@@ -267,12 +309,12 @@ def insert1():
         d=c.insertdata(session_pool,id,nom,prix)
         print(nom,prix)
         flash("Data inserted successfully ")
-        return redirect(url_for('tableinfoprof'))
+        return redirect(url_for('produitt'))
         
-@app.route('/table/',methods=['POST','GET'])    
+@app.route('/Commande/',methods=['POST','GET'])    
 @login_required
-def table():
-    cour=[]
+def Commande():
+    Commande=[]
     global session_pool
     print(session_pool)
     c=commande()
@@ -280,9 +322,9 @@ def table():
     for key,value in d.items():
         for i in value:
             my_list = ast.literal_eval(i)
-            cour.append(my_list)
+            Commande.append(my_list)
     #print(c.selectdata(c))
-    return render_template('table.html',data=cour)
+    return render_template('Commande.html',data=Commande)
 
 
 @app.route('/')
